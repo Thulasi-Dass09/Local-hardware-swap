@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Loop Bench: Local hardware swaps and e-waste drop-off</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e8ecec;--surface:#f6f8f7;--ink:#17262b;--mute:#58696d;--line:#c3cdcd;--green:#1d5b49;--green-ink:#fff;--gold:#b88a12;
+--ok:#1d6b45;--ok-bg:#d6eadf;--mid:#8a5a00;--mid-bg:#f4e4bd;--scrap:#8a2f2f;--scrap-bg:#f1d6d3;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0f1a1d;--surface:#16262a;--ink:#e3ecea;--mute:#93a7a8;--line:#2c4247;--green:#5cc9a2;--green-ink:#08231a;--gold:#e0b83c;
+--ok:#7fdcab;--ok-bg:#1b3d2f;--mid:#ecc25f;--mid-bg:#40340f;--scrap:#f09a96;--scrap-bg:#46201f}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0f1a1d;--surface:#16262a;--ink:#e3ecea;--mute:#93a7a8;--line:#2c4247;--green:#5cc9a2;--green-ink:#08231a;--gold:#e0b83c;--ok:#7fdcab;--ok-bg:#1b3d2f;--mid:#ecc25f;--mid-bg:#40340f;--scrap:#f09a96;--scrap-bg:#46201f}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Source Sans 3",system-ui,sans-serif}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.1;margin:0}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+header.top{background:var(--green);color:var(--green-ink)}
+header.top .wrap{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding-top:14px;padding-bottom:14px}
+.brand{font:800 1.4rem "Bricolage Grotesque",sans-serif;letter-spacing:-.02em}
+nav.tabs{display:flex;gap:4px}
+nav.tabs a{color:inherit;text-decoration:none;padding:6px 12px;border-radius:6px;font-weight:600}
+nav.tabs a:hover{background:rgba(255,255,255,.18)}
+.role{display:flex;align-items:center;gap:8px;font-size:.9rem}
+.role select{background:rgba(255,255,255,.16);color:inherit;border:1px solid rgba(255,255,255,.4);border-radius:6px;padding:5px 8px}
+.role select option{color:#000}
+.hero{padding:44px 0 28px;display:grid;grid-template-columns:1.3fr 1fr;gap:32px;align-items:center}
+.hero h1{font-size:clamp(2rem,5vw,3.4rem);font-weight:800;letter-spacing:-.03em;max-width:15ch}
+.hero p{color:var(--mute);max-width:52ch;margin:14px 0 0}
+.grades{display:grid;gap:10px}
+.grade-row{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.grade-row b{display:block}
+.grade-row span.d{color:var(--mute);font-size:.9rem}
+.pin{width:14px;height:34px;border-radius:3px;flex:none}
+.stats{display:flex;gap:28px;margin-top:20px;flex-wrap:wrap}
+.stats div b{font:800 1.6rem "Bricolage Grotesque",sans-serif;display:block}
+.stats div span{color:var(--mute);font-size:.88rem}
+section.block{padding:28px 0 36px}
+section.block>.wrap>h2,.section-head h2{font-size:1.8rem;font-weight:700}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.btn{background:var(--green);color:var(--green-ink);border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.layout{display:grid;grid-template-columns:260px 1fr;gap:24px;align-items:start}
+.filters{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:14px;position:sticky;top:12px}
+.filters header{display:flex;justify-content:space-between;align-items:center}
+.filters h3{font-size:1.1rem}
+.field label,.filters legend{font-weight:600;font-size:.9rem;display:block;margin-bottom:4px}
+.field input,.field select,.modal input,.modal select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+fieldset{border:0;margin:0;padding:0}
+.opts{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:0;padding:0}
+.opts label{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.88rem;cursor:pointer;background:var(--bg)}
+.opts li[data-checked="true"] label{background:var(--green);color:var(--green-ink);border-color:var(--green)}
+.opts input{position:absolute;opacity:0;width:0;height:0}
+.opts li:focus-within label{outline:3px solid var(--gold);outline-offset:2px}
+.linkbtn{background:none;border:0;color:var(--green);font-weight:600;cursor:pointer;text-decoration:underline;padding:0}
+.count{color:var(--mute);margin:0 0 12px}
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.media{height:96px;display:grid;place-items:center;font:800 1.7rem "Bricolage Grotesque",sans-serif;color:var(--green);background:
+ repeating-linear-gradient(90deg,transparent 0 11px,var(--line) 11px 12px),var(--bg);border-bottom:1px solid var(--line)}
+.card .body{padding:12px 14px;display:grid;gap:6px;flex:1}
+.card h3{font-size:1.02rem}
+.card .spec{color:var(--mute);font-size:.88rem;margin:0}
+.badge{justify-self:start;font-size:.78rem;font-weight:600;padding:2px 9px;border-radius:999px}
+.badge[data-grade="FULLY_FUNCTIONAL"]{background:var(--ok-bg);color:var(--ok)}
+.badge[data-grade="PARTIALLY_WORKING"]{background:var(--mid-bg);color:var(--mid)}
+.badge[data-grade="SCRAP_RECYCLE"]{background:var(--scrap-bg);color:var(--scrap)}
+.card .foot{display:flex;justify-content:space-between;align-items:center;padding:0 14px 12px;font-size:.85rem;color:var(--mute)}
+.card .foot button{font-size:.85rem;padding:5px 11px}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:28px;text-align:center}
+.pager{display:flex;gap:14px;align-items:center;justify-content:center;margin-top:18px}
+.dropoff{display:grid;grid-template-columns:1.4fr 1fr;gap:20px}
+.map{position:relative;min-height:340px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:
+ linear-gradient(var(--line) 1px,transparent 1px) 0 0/48px 48px,linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/48px 48px,var(--surface)}
+.map iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.map .note{position:absolute;left:12px;bottom:10px;font-size:.82rem;color:var(--mute);background:var(--surface);padding:3px 8px;border-radius:6px}
+.mk{position:absolute;transform:translate(-50%,-100%);border:0;background:var(--green);color:var(--green-ink);width:30px;height:30px;border-radius:50% 50% 50% 0;rotate:-45deg;cursor:pointer;display:grid;place-items:center}
+.mk span{rotate:45deg;font-weight:700;font-size:.8rem}
+.mk[aria-pressed="true"]{background:var(--gold);color:#000;width:38px;height:38px;z-index:2}
+.centers{display:grid;gap:10px;align-content:start;list-style:none;margin:0;padding:0}
+.center{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer}
+.center[aria-current="true"]{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+.center h3{font-size:1rem}
+.center p{margin:2px 0;color:var(--mute);font-size:.9rem}
+.tag{display:inline-block;font-size:.76rem;border:1px solid var(--line);border-radius:6px;padding:0 6px;margin:4px 4px 0 0}
+.verified{color:var(--ok);font-weight:600;font-size:.82rem}
+.pending{color:var(--mid);font-weight:600;font-size:.82rem}
+dialog.modal{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:22px;width:min(440px,92vw)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.modal form{display:grid;gap:12px}
+.modal .row{display:flex;gap:8px;justify-content:flex-end}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;z-index:20}
+footer{padding:26px 0;color:var(--mute);border-top:1px solid var(--line);font-size:.9rem}
+@media (max-width:860px){.hero,.layout,.dropoff{grid-template-columns:1fr}.filters{position:static}}
+@media (prefers-reduced-motion:no-preference){.mk{transition:width .15s,height .15s}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand">Loop Bench</div>
+  <nav class="tabs" aria-label="Main"><a href="#swap">Swap board</a><a href="#dropoff">Drop-off centers</a></nav>
+  <label class="role">Viewing as
+    <select id="role"><option value="CONSUMER">Consumer</option><option value="RECYCLER">Verified recycler</option><option value="ADMIN">Admin</option></select>
+  </label>
+</div></header>
+
+<main>
+<div class="wrap hero">
+  <div>
+    <h1>Swap the parts. Recycle the rest.</h1>
+    <p>Trade working PC components with neighbors, and send dead hardware to a verified recycling center instead of the bin.</p>
+    <div class="stats" id="stats"></div>
+  </div>
+  <div class="grades" aria-label="Condition grades">
+    <div class="grade-row"><i class="pin" style="background:var(--ok)"></i><div><b>Fully functional</b><span class="d">Tested and works as expected. Ready to swap.</span></div></div>
+    <div class="grade-row"><i class="pin" style="background:var(--gold)"></i><div><b>Partially working</b><span class="d">Works with faults, or parts only. Described in the listing.</span></div></div>
+    <div class="grade-row"><i class="pin" style="background:var(--scrap)"></i><div><b>Scrap / recycle</b><span class="d">Dead. Skip the swap and use a drop-off center.</span></div></div>
+  </div>
+</div>
+
+<section class="block" id="swap"><div class="wrap">
+  <div class="section-head"><h2>Swap board</h2><button class="btn" id="actionBtn"></button></div>
+  <div class="layout">
+    <aside class="filters" aria-label="Filter hardware listings">
+      <header><h3>Filters</h3><button class="linkbtn" id="reset" hidden></button></header>
+      <div class="field"><label for="q">Search</label><input id="q" type="search" placeholder="Ryzen 5, Corsair, B450"></div>
+      <div class="field"><label for="cat">Category</label><select id="cat"></select></div>
+      <div class="field"><label for="type">Listing type</label>
+        <select id="type"><option value="">Swap and giveaway</option><option value="SWAP">Swap</option><option value="GIVEAWAY">Giveaway</option></select></div>
+      <div id="groups"></div>
+    </aside>
+    <div><p class="count" id="count" role="status"></p><div class="items" id="items"></div><nav class="pager" id="pager" aria-label="Pagination"></nav></div>
+  </div>
+</div></section>
+
+<section class="block" id="dropoff"><div class="wrap">
+  <div class="section-head"><h2>Drop-off centers</h2></div>
+  <div class="dropoff">
+    <div class="map" id="map" role="region" aria-label="E-waste drop-off map"><iframe id="mapframe" title="Map of e-waste drop-off centers" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+    <ul class="centers" id="centers"></ul>
+  </div>
+</div></section>
+</main>
+<footer><div class="wrap">Loop Bench starts with sample data and saves your changes in this browser. Connect the API from the project blueprint to share data between users.</div></footer>
+
+<dialog class="modal" id="dlg"></dialog>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const GRADES={FULLY_FUNCTIONAL:"Fully functional",PARTIALLY_WORKING:"Partially working",SCRAP_RECYCLE:"Scrap / recycle"};
+const CATS={CPU:"Processors",RAM:"Memory",GPU:"Graphics cards",MOTHERBOARD:"Motherboards",STORAGE:"Storage",PSU:"Power supplies",COOLER:"Coolers",CASE:"Cases",PERIPHERAL:"Peripherals",OTHER:"Other"};
+const SOCKETS=["AM3+","AM4","AM5","LGA1150","LGA1151","LGA1200","LGA1700","LGA1851","LGA2011-3","LGA2066","TR4","sTRX4"];
+const MEMGEN=["DDR2","DDR3","DDR4","DDR5"];
+const GROUPS=[
+ {key:"conditions",label:"Condition",options:Object.entries(GRADES)},
+ {key:"cpuSockets",label:"Processor socket",options:SOCKETS.map(s=>[s,s]),cats:["CPU","MOTHERBOARD"]},
+ {key:"memoryGenerations",label:"Memory generation",options:MEMGEN.map(s=>[s,s]),cats:["RAM","MOTHERBOARD"]}];
+const PAGE=6;
+let listings=[
+ ["Ryzen 5 3600","CPU","FULLY_FUNCTIONAL","AM4",null,"Anna Nagar","SWAP"],
+ ["Core i7-4770K","CPU","PARTIALLY_WORKING","LGA1150",null,"T. Nagar","SWAP"],
+ ["Core i5-12400F","CPU","FULLY_FUNCTIONAL","LGA1700",null,"Adyar","SWAP"],
+ ["ASUS B450-F board","MOTHERBOARD","FULLY_FUNCTIONAL","AM4","DDR4","Velachery","SWAP"],
+ ["Gigabyte Z97 board","MOTHERBOARD","PARTIALLY_WORKING","LGA1150","DDR3","Guindy","GIVEAWAY"],
+ ["MSI B650 board","MOTHERBOARD","FULLY_FUNCTIONAL","AM5","DDR5","Porur","SWAP"],
+ ["Corsair 16GB DDR4 3200","RAM","FULLY_FUNCTIONAL",null,"DDR4","Anna Nagar","SWAP"],
+ ["Kingston 8GB DDR3 (2x4)","RAM","FULLY_FUNCTIONAL",null,"DDR3","Tambaram","GIVEAWAY"],
+ ["Old DDR2 sticks, bundle","RAM","SCRAP_RECYCLE",null,"DDR2","Adyar","GIVEAWAY"],
+ ["Crucial 32GB DDR5 6000","RAM","FULLY_FUNCTIONAL",null,"DDR5","T. Nagar","SWAP"],
+ ["GTX 1060 6GB","GPU","PARTIALLY_WORKING",null,null,"Velachery","SWAP"],
+ ["RX 580, artifacts on screen","GPU","SCRAP_RECYCLE",null,null,"Guindy","GIVEAWAY"],
+ ["Corsair CX550 PSU","PSU","FULLY_FUNCTIONAL",null,null,"Porur","SWAP"],
+ ["Xeon E5-2670 v3","CPU","FULLY_FUNCTIONAL","LGA2011-3",null,"Tambaram","SWAP"]
+].map((a,i)=>({id:i+1,title:a[0],category:a[1],conditionGrade:a[2],cpuSocket:a[3],memoryGeneration:a[4],city:a[5],type:a[6]}));
+const centers=[
+ {id:"c1",name:"GreenCircuit Recyclers",addr:"Ambattur Industrial Estate",lat:13.1143,lng:80.1548,x:22,y:30,hours:"Mon to Sat, 9:00 to 17:00",mats:["Computers","Batteries","Monitors"],ok:true},
+ {id:"c2",name:"ReCycle Hub Adyar",addr:"Gandhi Nagar, Adyar",lat:13.0067,lng:80.2570,x:60,y:68,hours:"Mon to Fri, 10:00 to 18:00",mats:["Computers","Phones","Cables"],ok:true},
+ {id:"c3",name:"EcoByte Collection Point",addr:"Guindy Industrial Estate",lat:13.0067,lng:80.2206,x:44,y:52,hours:"Tue to Sun, 9:00 to 16:00",mats:["Computers","Printers","Hazardous"],ok:true},
+ {id:"c4",name:"Tambaram E-Care",addr:"Selaiyur, Tambaram",lat:12.9249,lng:80.1000,x:74,y:84,hours:"Mon to Sat, 9:30 to 17:30",mats:["Computers","Appliances"],ok:true}];
+const DEF={q:"",category:"",type:"",conditions:[],cpuSockets:[],memoryGenerations:[],page:1};
+const KEY="loopbench-v1";
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({listings,myCenters}))}catch(e){}}
+const saved=load();
+if(Array.isArray(saved.listings))listings=saved.listings;
+let f={...DEF}, role="CONSUMER", sel=null, myCenters=Array.isArray(saved.myCenters)?saved.myCenters:[];
+const ARR=["conditions","cpuSockets","memoryGenerations"];
+function syncUrl(){const p=new URLSearchParams();["q","category","type"].forEach(k=>f[k]&&p.set(k,f[k]));ARR.forEach(k=>f[k].length&&p.set(k,f[k].join(",")));if(f.page>1)p.set("page",f.page);const s=p.toString();try{history.replaceState(null,"",s?"?"+s:location.pathname)}catch(e){}}
+function readUrl(){const p=new URLSearchParams(location.search);const c=p.get("category");if(c&&CATS[c])f.category=c;const t=p.get("type");if(t==="SWAP"||t==="GIVEAWAY")f.type=t;f.q=(p.get("q")||"").slice(0,100);const ok={conditions:Object.keys(GRADES),cpuSockets:SOCKETS,memoryGenerations:MEMGEN};ARR.forEach(k=>{f[k]=(p.get(k)||"").split(",").filter(v=>ok[k].includes(v))});f.page=Math.max(1,parseInt(p.get("page"))||1)}
+// Standard OpenStreetMap iframe embed: no direct tile requests, so no 403 when opened from a local file.
+function drawMap(all){
+ const frame=$("mapframe"),s=all.find(x=>x.id===sel);
+ let bbox="79.95,12.80,80.45,13.30",mk="";
+ if(s){const lat=s.lat!=null?s.lat:13.0+(50-s.y)/400,lng=s.lng!=null?s.lng:80.2+(s.x-50)/400,d=0.02;
+  bbox=[lng-d,lat-d,lng+d,lat+d].map(n=>n.toFixed(5)).join(",");mk="&marker="+lat.toFixed(5)+","+lng.toFixed(5)}
+ const src="https://www.openstreetmap.org/export/embed.html?bbox="+encodeURIComponent(bbox)+"&layer=mapnik"+mk;
+ if(frame.dataset.src!==src){frame.dataset.src=src;frame.src=src}
+ return true;
+}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function sanitize(){
+ const c=f.category;
+ if(c&&!["CPU","MOTHERBOARD"].includes(c))f.cpuSockets=[];
+ if(c&&!["RAM","MOTHERBOARD"].includes(c))f.memoryGenerations=[];
+}
+function setF(k,v){f[k]=v;if(k!=="page")f.page=1;sanitize();render()}
+function toggle(k,v){setF(k,f[k].includes(v)?f[k].filter(x=>x!==v):[...f[k],v])}
+function active(){return f.conditions.length+f.cpuSockets.length+f.memoryGenerations.length+(f.category?1:0)+(f.type?1:0)+(f.q?1:0)}
+function match(l){
+ const q=f.q.toLowerCase();
+ return(!f.category||l.category===f.category)&&(!f.type||l.type===f.type)
+ &&(!f.conditions.length||f.conditions.includes(l.conditionGrade))
+ &&(!f.cpuSockets.length||f.cpuSockets.includes(l.cpuSocket))
+ &&(!f.memoryGenerations.length||f.memoryGenerations.includes(l.memoryGeneration))
+ &&(!q||l.title.toLowerCase().includes(q));
+}
+function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2600)}
+
+function renderFilters(){
+ $("groups").innerHTML=GROUPS.filter(g=>!g.cats||!f.category||g.cats.includes(f.category)).map(g=>`
+  <fieldset data-filter-group="${g.key}"><legend>${g.label}</legend><ul class="opts">${g.options.map(([v,l])=>{
+   const on=f[g.key].includes(v);
+   return `<li data-checked="${on}"><label><input type="checkbox" data-g="${g.key}" value="${esc(v)}" ${on?"checked":""}>${esc(l)}</label></li>`}).join("")}</ul></fieldset>`).join("");
+ $("groups").querySelectorAll("input").forEach(i=>i.onchange=()=>toggle(i.dataset.g,i.value));
+ const n=active();$("reset").hidden=!n;$("reset").textContent=`Clear all (${n})`;
+ $("cat").value=f.category;$("type").value=f.type;
+}
+function renderItems(){
+ const all=listings.filter(match),pages=Math.max(1,Math.ceil(all.length/PAGE));
+ if(f.page>pages)f.page=pages;
+ const items=all.slice((f.page-1)*PAGE,f.page*PAGE);
+ $("count").textContent=`${all.length} ${all.length===1?"item":"items"}`;
+ $("items").innerHTML=items.length?items.map(l=>{
+  const spec=[l.cpuSocket,l.memoryGeneration].filter(Boolean).join(" and ");
+  const scrap=l.conditionGrade==="SCRAP_RECYCLE";
+  return `<article class="card"><div class="media" aria-hidden="true">${esc(l.category)}</div><div class="body">
+   <h3>${esc(l.title)}</h3><span class="badge" data-grade="${l.conditionGrade}">${GRADES[l.conditionGrade]}</span>
+   ${spec?`<p class="spec">${esc(spec)}</p>`:""}</div>
+   <div class="foot"><span>${esc(l.city)}, ${l.type==="SWAP"?"swap":"giveaway"}</span>
+   ${scrap?`<button class="btn ghost" data-find>Find recycler</button>`:`<button class="btn" data-offer="${l.id}">Offer swap</button>`}</div></article>`}).join("")
+  :`<div class="empty" style="grid-column:1/-1"><p><b>No listings match these filters.</b></p><button class="btn ghost" id="empty-reset">Clear filters</button></div>`;
+ $("pager").innerHTML=pages>1?`<button class="btn ghost" id="prev" ${f.page<=1?"disabled":""}>Previous</button><span>Page ${f.page} of ${pages}</span><button class="btn ghost" id="next" ${f.page>=pages?"disabled":""}>Next</button>`:"";
+ if($("prev")){$("prev").onclick=()=>setF("page",f.page-1);$("next").onclick=()=>setF("page",f.page+1)}
+ if($("empty-reset"))$("empty-reset").onclick=reset;
+ $("items").querySelectorAll("[data-find]").forEach(b=>b.onclick=()=>$("dropoff").scrollIntoView({behavior:"smooth"}));
+ $("items").querySelectorAll("[data-offer]").forEach(b=>b.onclick=()=>toast(role==="CONSUMER"?"Swap offer sent to the owner.":"Switch to a consumer view to make swap offers."));
+}
+function renderCenters(){
+ const all=[...centers,...myCenters];
+ const useL=drawMap(all);
+ $("map").querySelectorAll(".mk").forEach(m=>m.remove());
+ if(!useL)all.forEach((c,i)=>{const b=document.createElement("button");b.className="mk";b.style.left=c.x+"%";b.style.top=c.y+"%";
+  b.setAttribute("aria-label",c.name);b.setAttribute("aria-pressed",sel===c.id);b.innerHTML=`<span>${i+1}</span>`;
+  b.onclick=()=>{sel=c.id;renderCenters()};$("map").appendChild(b)});
+ $("centers").innerHTML=all.map(c=>`<li class="center" data-id="${c.id}" ${sel===c.id?'aria-current="true"':""}>
+  <h3>${esc(c.name)}</h3><p>${esc(c.addr)}</p><p>${esc(c.hours)}</p>
+  <span class="${c.ok?"verified":"pending"}">${c.ok?"Verified facility":"Pending verification"}</span>${role==="ADMIN"&&!c.ok?` <button class="btn" data-verify="${c.id}">Verify facility</button>`:""}<div>${c.mats.map(m=>`<span class="tag">${esc(m)}</span>`).join("")}</div></li>`).join("");
+ $("centers").querySelectorAll(".center").forEach(li=>li.onclick=()=>{sel=li.dataset.id;renderCenters()});
+ $("centers").querySelectorAll("[data-verify]").forEach(b=>b.onclick=e=>{e.stopPropagation();const c=myCenters.find(x=>x.id===b.dataset.verify);if(c){c.ok=true;save();renderCenters();toast("Facility verified.")}});
+}
+function renderChrome(){
+ $("actionBtn").textContent=role==="CONSUMER"?"Post a listing":"Add drop-off location";$("actionBtn").hidden=role==="ADMIN";
+ const n=listings.filter(l=>l.conditionGrade==="FULLY_FUNCTIONAL").length;
+ $("stats").innerHTML=`<div><b>${listings.length}</b><span>active listings</span></div><div><b>${n}</b><span>ready to swap</span></div><div><b>${centers.length+myCenters.length}</b><span>drop-off centers</span></div>`;
+}
+function render(){renderFilters();renderItems();renderChrome();syncUrl();save()}
+function reset(){f={...DEF};$("q").value="";render()}
+
+$("cat").innerHTML=`<option value="">All categories</option>`+Object.entries(CATS).map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
+$("cat").onchange=e=>setF("category",e.target.value);
+$("type").onchange=e=>setF("type",e.target.value);
+let qt;$("q").oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>setF("q",e.target.value.trim()),250)};
+$("reset").onclick=reset;
+$("role").onchange=e=>{role=e.target.value;renderChrome();renderCenters();toast({CONSUMER:"Consumer view: post and swap hardware.",RECYCLER:"Recycler view: publish drop-off locations.",ADMIN:"Admin view: verify pending recycling facilities."}[role])};
+
+const dlg=$("dlg");
+function opts(o){return Object.entries(o).map(([v,l])=>`<option value="${v}">${l}</option>`).join("")}
+$("actionBtn").onclick=()=>{
+ if(role==="CONSUMER"){
+  dlg.innerHTML=`<form method="dialog" id="lf"><h2>Post a listing</h2>
+  <div class="field"><label for="n-t">Title</label><input id="n-t" required maxlength="80"></div>
+  <div class="field"><label for="n-c">Category</label><select id="n-c">${opts(CATS)}</select></div>
+  <div class="field"><label for="n-g">Condition</label><select id="n-g">${opts(GRADES)}</select></div>
+  <div class="field"><label for="n-s">Processor socket (optional)</label><select id="n-s"><option value="">None</option>${SOCKETS.map(s=>`<option>${s}</option>`).join("")}</select></div>
+  <div class="field"><label for="n-m">Memory generation (optional)</label><select id="n-m"><option value="">None</option>${MEMGEN.map(s=>`<option>${s}</option>`).join("")}</select></div>
+  <div class="row"><button type="button" class="btn ghost" id="x">Cancel</button><button class="btn">Publish listing</button></div></form>`;
+  dlg.showModal();$("x").onclick=()=>dlg.close();
+  $("lf").onsubmit=()=>{listings.unshift({id:Date.now(),title:$("n-t").value.trim(),category:$("n-c").value,conditionGrade:$("n-g").value,
+   cpuSocket:$("n-s").value||null,memoryGeneration:$("n-m").value||null,city:"Your area",type:"SWAP"});f={...DEF};render();toast("Listing published.")};
+ }else{
+  dlg.innerHTML=`<form method="dialog" id="cf"><h2>Add drop-off location</h2>
+  <div class="field"><label for="c-n">Center name</label><input id="c-n" required></div>
+  <div class="field"><label for="c-a">Address</label><input id="c-a" required></div>
+  <div class="field"><label for="c-h">Opening hours</label><input id="c-h" placeholder="Mon to Fri, 9:00 to 17:00" required></div>
+  <div class="row"><button type="button" class="btn ghost" id="x">Cancel</button><button class="btn">Submit for review</button></div></form>`;
+  dlg.showModal();$("x").onclick=()=>dlg.close();
+  $("cf").onsubmit=()=>{myCenters.push({id:"m"+Date.now(),name:$("c-n").value,addr:$("c-a").value,hours:$("c-h").value,
+   x:15+Math.random()*70,y:15+Math.random()*70,mats:["Computers"],ok:false});save();renderCenters();renderChrome();toast("Submitted. An admin will verify your facility.")};
+ }
+};
+readUrl();sanitize();$("q").value=f.q;render();renderCenters();
+</script>
+</body>
+</html>
